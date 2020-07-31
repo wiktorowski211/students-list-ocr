@@ -1,3 +1,10 @@
+### Uruchom:
+```
+python3 run.py "input" 30 "output"
+```
+
+### Strategia:
+
 1. Ścieżka do katalogu ze zdjęciami, liczba n plików, ścieżka do wyjścia
 2. Wyszukaj kartkę -> Strona + macierz transformacji
 
