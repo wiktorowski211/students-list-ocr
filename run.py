@@ -47,9 +47,11 @@ def process_images(input_data_dir, output_data_dir, n_files):
 
         image = cv2.imread(input_file_path)
 
+        print("{}. Mark text".format(number))
         marked_text = mark_text.call(image)
         cv2.imwrite(output_words_file_path, marked_text)
 
+        print("{}. Recognize index".format(number))
         recognized_indexes = recognize_indexes.call(image)
         with open(output_indexes_file_path, 'w') as f:
             f.write('\n'.join(recognized_indexes))

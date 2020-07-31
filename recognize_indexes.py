@@ -71,6 +71,47 @@ def slice_image_lines(img, minimum=20, padding=10):
     return lines
 
 
+def slice_words(img, minimum=5, padding=10, block_size=30):
+    blur = cv2.GaussianBlur(img, (5, 5), 0)
+    ret, threshed = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+
+    hist = np.mean(threshed, axis=0)
+
+    histogram = []
+
+    block = []
+
+    for index, number in enumerate(hist):
+        block.append(number)
+
+        if index % block_size == block_size - 1:
+            mean_of_block = np.mean(block)
+
+            for i in block:
+                histogram.append(mean_of_block)
+            block = []
+
+    th = 0
+    H, W = img.shape[:2]
+    lowers = [x for x in range(W - block_size) if histogram[x] <= th and histogram[x + 1] > th]
+    uppers = [x for x in range(W - block_size) if histogram[x] > th and histogram[x + 1] <= th]
+
+    words = []
+
+    for lower, upper in zip(lowers, uppers):
+        if upper - lower > minimum:
+            if lower < padding:
+                lower = padding
+
+            if W - upper < padding:
+                upper = W - padding
+
+            word = img[:, lower - padding:upper + padding]
+            words.append(word)
+
+    return words
+
+
 def slice_digits(img, minimum=5, padding=10):
     blur = cv2.GaussianBlur(img, (5, 5), 0)
     ret, threshed = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
@@ -110,7 +151,21 @@ def call(image):
     indexes = []
 
     for line in lines:
-        digits = slice_digits(line)
+        words = slice_words(line, block_size=50)
+
+        # if len(words) == 0:
+        #     words = slice_words(line, block_size=30)
+        #
+        # if len(words) == 0:
+        #     words = slice_words(line, block_size=10)
+        #
+        # if len(words) == 0:
+        #     words = slice_words(line, block_size=3)
+
+        if len(words) > 0:
+            digits = slice_digits(words[-1])
+        else:
+            digits = slice_digits(line)
 
         predicted_digits = []
 
