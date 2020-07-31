@@ -101,7 +101,8 @@ def into_page(image, clipMax=31):
                 box = cv2.boxPoints(rect)
                 box = np.int0(box)
                 rect_area = cv2.contourArea(box)
-                if (cv2.contourArea(approx) / rect_area) > 0.9:
+                polygon_area = cv2.contourArea(approx)
+                if rect_area > 1 and (polygon_area / rect_area) > 0.9:
                     displayCnt = approx
                     break
 
