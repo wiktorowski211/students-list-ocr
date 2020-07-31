@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import os
 import re
 import shutil
@@ -37,7 +39,6 @@ def process_images(input_data_dir, output_data_dir, n_files):
     for number, file_name in enumerate(sorted_files(input_data_dir)):
         if number >= n_files:
             break
-
         file_number = extract_file_number(file_name)
 
         input_file_path = '{}/{}'.format(input_data_dir, file_name)
