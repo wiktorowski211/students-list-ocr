@@ -51,9 +51,13 @@ def slice_image_lines(img, minimum=20, padding=10):
     hist = np.mean(threshed, axis=1)
 
     th = 4
-    H, W = img.shape[:2]
-    lowers = [y for y in range(H - 1) if hist[y] <= th and hist[y + 1] > th]
-    uppers = [y for y in range(H - 1) if hist[y] > th and hist[y + 1] <= th]
+    height, _width = img.shape[:2]
+    lowers = [y for y in range(height - 1) if hist[y] <= th and hist[y + 1] > th]
+    uppers = [y for y in range(height - 1) if hist[y] > th and hist[y + 1] <= th]
+
+    if len(uppers) and len(lowers):
+        if uppers[0] < lowers[0]:
+            upper = uppers.pop(0)
 
     lines = []
 
@@ -61,10 +65,8 @@ def slice_image_lines(img, minimum=20, padding=10):
         if upper - lower > minimum:
             if lower < padding:
                 lower = padding
-
-            if H - upper < padding:
-                upper = W - padding
-
+            if height - upper < padding:
+                upper = height - padding
             line = img[lower - padding:upper + padding, ]
             lines.append(line)
 
@@ -73,7 +75,7 @@ def slice_image_lines(img, minimum=20, padding=10):
 
 def slice_words(img, minimum=5, padding=10, block_size=30):
     blur = cv2.GaussianBlur(img, (5, 5), 0)
-    ret, threshed = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    _ret, threshed = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
     hist = np.mean(threshed, axis=0)
 
@@ -92,9 +94,9 @@ def slice_words(img, minimum=5, padding=10, block_size=30):
             block = []
 
     th = 0
-    H, W = img.shape[:2]
-    lowers = [x for x in range(W - block_size) if histogram[x] <= th and histogram[x + 1] > th]
-    uppers = [x for x in range(W - block_size) if histogram[x] > th and histogram[x + 1] <= th]
+    _height, width = img.shape[:2]
+    lowers = [x for x in range(width - block_size) if histogram[x] <= th and histogram[x + 1] > th]
+    uppers = [x for x in range(width - block_size) if histogram[x] > th and histogram[x + 1] <= th]
 
     words = []
 
@@ -103,8 +105,8 @@ def slice_words(img, minimum=5, padding=10, block_size=30):
             if lower < padding:
                 lower = padding
 
-            if W - upper < padding:
-                upper = W - padding
+            if width - upper < padding:
+                upper = width - padding
 
             word = img[:, lower - padding:upper + padding]
             words.append(word)
@@ -114,14 +116,14 @@ def slice_words(img, minimum=5, padding=10, block_size=30):
 
 def slice_digits(img, minimum=5, padding=10):
     blur = cv2.GaussianBlur(img, (5, 5), 0)
-    ret, threshed = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    _ret, threshed = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
     hist = np.mean(threshed, axis=0)
 
     th = 0
-    H, W = img.shape[:2]
-    lowers = [x for x in range(W - 1) if hist[x] <= th and hist[x + 1] > th]
-    uppers = [x for x in range(W - 1) if hist[x] > th and hist[x + 1] <= th]
+    _height, width = img.shape[:2]
+    lowers = [x for x in range(width - 1) if hist[x] <= th and hist[x + 1] > th]
+    uppers = [x for x in range(width - 1) if hist[x] > th and hist[x + 1] <= th]
 
     digits = []
 
@@ -130,8 +132,8 @@ def slice_digits(img, minimum=5, padding=10):
             if lower < padding:
                 lower = padding
 
-            if W - upper < padding:
-                upper = W - padding
+            if width - upper < padding:
+                upper = width - padding
 
             digit = img[:, lower - padding:upper + padding]
             digits.append(digit)
@@ -151,28 +153,30 @@ def call(image):
     indexes = []
 
     for line in lines:
-        words = slice_words(line, block_size=50)
+        words = slice_words(line, block_size=20)
 
-        # if len(words) == 0:
-        #     words = slice_words(line, block_size=30)
-        #
-        # if len(words) == 0:
-        #     words = slice_words(line, block_size=10)
-        #
-        # if len(words) == 0:
-        #     words = slice_words(line, block_size=3)
+        word_digits = []
+        digits_size = 0
 
-        if len(words) > 0:
-            digits = slice_digits(words[-1])
-        else:
-            digits = slice_digits(line)
+        for word in reversed(words):
+            digits = slice_digits(word)
+            digits_size += len(digits)
+            word_digits.extend(reversed(digits))
+            # min 3 "digits"
+            if digits_size >3:
+                break
+        word_digits = reversed(word_digits)
 
         predicted_digits = []
 
-        for digit in digits:
+        for digit in word_digits:
+            (h, w) = digit.shape[:2]
+            if h > 300 or w > 300:
+                print("Invalid digit")
+                continue
             resized_digit = preprocess.resize(digit, 28)
 
-            predicted_digit, probab = classifier.predict(model, resized_digit)
+            predicted_digit, _probab = classifier.predict(model, resized_digit)
 
             predicted_digits.append(predicted_digit)
 

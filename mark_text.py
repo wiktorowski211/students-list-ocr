@@ -48,7 +48,7 @@ def block_image_process(image, block_size):
         for col in range(0, image.shape[1], block_size):
             idx = (row, col)
             block_idx = get_block_index(image.shape, idx, block_size)
-            out_image[block_idx] = adaptive_median_threshold(image[block_idx])
+            out_image[tuple(block_idx)] = adaptive_median_threshold(image[tuple(block_idx)])
 
     return out_image
 
@@ -70,9 +70,9 @@ def slice_image_lines(img, minimum=20, padding=10, draw=False):
     hist = np.mean(threshed, axis=1)
 
     th = 4
-    H, W = img.shape[:2]
-    lowers = [y for y in range(H - 1) if hist[y] <= th < hist[y + 1]]
-    uppers = [y for y in range(H - 1) if hist[y] > th and hist[y + 1] <= th]
+    height, _width = img.shape[:2]
+    lowers = [y for y in range(height - 1) if hist[y] <= th < hist[y + 1]]
+    uppers = [y for y in range(height - 1) if hist[y] > th and hist[y + 1] <= th]
 
     lines = []
 
@@ -82,8 +82,8 @@ def slice_image_lines(img, minimum=20, padding=10, draw=False):
             if lower < padding:
                 lower = padding
 
-            if H - upper < padding:
-                upper = W - padding
+            if height - upper < padding:
+                upper = height - padding
             line = (lower - padding, upper + padding)
             # draw
             if draw:
@@ -108,7 +108,7 @@ def mark_words(page):
     minigrid = clean_border(minigrid)
     binary = cv2.threshold(minigrid, 0, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)[1]
 
-    contours = page.copy()
+    contours = np.zeros_like(gray)
     cnts = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
 
     # format: (top_left, bottom_right)
@@ -116,7 +116,7 @@ def mark_words(page):
     for c in cnts:
         rect_x, rect_y, rect_w, rect_h = cv2.boundingRect(c)
 
-        height, width, channels = page.shape
+        height, width, _channels = page.shape
         # filter too big rectangles
         if rect_w * rect_h > height * width / 10:
             continue
@@ -131,19 +131,17 @@ def mark_words(page):
 
     # inv_binary = cv2.bitwise_not(binary)
     lines = slice_image_lines(binary)[0]
-    colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255)]
+
     for ((top_left_x, top_left_y)), ((bottom_right_x, bottom_right_y)) in text_bits:
         color = None
         for n, (line_lower, line_upper) in enumerate(lines):
-            box_middle = (top_left_y + bottom_right_y + 10) / 2
+            box_middle = (top_left_y + bottom_right_y + 7) / 2
             if line_lower <= box_middle <= line_upper:
-                # color = n+1
-                color = colors[n % 3]
+                color = n+1
                 break
         if color is not None:
             cv2.rectangle(contours, (top_left_x, top_left_y), (bottom_right_x, bottom_right_y), color, -1)
-        else:
-            cv2.rectangle(contours, (top_left_x, top_left_y), (bottom_right_x, bottom_right_y), (255, 255, 0), -1)
+
     return contours
 
 
@@ -151,8 +149,8 @@ def revert_transform(image, page, transform=None):
     if transform is None:
         return page
     max_height, max_width, _ch = image.shape
-    retval, inv_transform = cv2.invert(transform)
-    return cv2.warpPerspective(page, inv_transform, (max_width, max_height), borderValue=cv2.BORDER_TRANSPARENT)
+    _retval, inv_transform = cv2.invert(transform)
+    return cv2.warpPerspective(page, inv_transform, (max_width, max_height))
 
 
 def call(image):

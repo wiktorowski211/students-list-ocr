@@ -119,8 +119,12 @@ def resize(image, size, inter=cv2.INTER_AREA):
     (h, w) = image.shape[:2]
 
     if h > w:
+        # print("there")
         r = size / float(h)
+        # print(f'r: {r}')
         dim = (int(w * r), size)
+        # print(f'dim: {dim}')
+        # print(f'{h}x{w}')
         resized = cv2.resize(image, dim, interpolation=inter)
 
         (h, w) = resized.shape[:2]
@@ -128,6 +132,7 @@ def resize(image, size, inter=cv2.INTER_AREA):
         padding = int((h - w) / 2)
         res = cv2.copyMakeBorder(resized, 0, 0, padding, padding, cv2.BORDER_CONSTANT)
     else:
+        # print("here")
         r = size / float(w)
         dim = (size, int(h * r))
         resized = cv2.resize(image, dim, interpolation=inter)

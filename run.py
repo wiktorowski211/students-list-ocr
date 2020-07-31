@@ -39,6 +39,8 @@ def process_images(input_data_dir, output_data_dir, n_files):
     for number, file_name in enumerate(sorted_files(input_data_dir)):
         if number >= n_files:
             break
+        # if number != 23:
+        #     continue
         file_number = extract_file_number(file_name)
 
         input_file_path = '{}/{}'.format(input_data_dir, file_name)
@@ -50,7 +52,6 @@ def process_images(input_data_dir, output_data_dir, n_files):
         print("{}. Mark text".format(number))
         marked_text = mark_text.call(image)
         cv2.imwrite(output_words_file_path, marked_text)
-
         print("{}. Recognize index".format(number))
         recognized_indexes = recognize_indexes.call(image)
         with open(output_indexes_file_path, 'w') as f:
