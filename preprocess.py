@@ -3,6 +3,22 @@ import numpy as np
 from imutils.perspective import order_points
 
 
+def deshadow(image):
+    rgb_planes = cv2.split(image)
+
+    result_planes = []
+    result_norm_planes = []
+    for plane in rgb_planes:
+        dilated_img = cv2.dilate(plane, np.ones((7, 7), np.uint8))
+        bg_img = cv2.medianBlur(dilated_img, 21)
+        diff_img = 255 - cv2.absdiff(plane, bg_img)
+        norm_img = cv2.normalize(diff_img, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8UC1)
+        result_planes.append(diff_img)
+        result_norm_planes.append(norm_img)
+    result = cv2.merge(result_planes)
+    return result
+
+
 def relight_clahe(bgr, clipLimit=2.0, tileGridSize=(8, 8)):
     lab = cv2.cvtColor(bgr, cv2.COLOR_BGR2LAB)
     lab_dims = cv2.split(lab)
@@ -97,3 +113,30 @@ def into_page(image, clipMax=31):
         else:
             return four_point_transform(image, displayCnt.reshape(4, 2))
     return image, None
+
+
+def resize(image, size, inter=cv2.INTER_AREA):
+    (h, w) = image.shape[:2]
+
+    if h > w:
+        r = size / float(h)
+        dim = (int(w * r), size)
+        resized = cv2.resize(image, dim, interpolation=inter)
+
+        (h, w) = resized.shape[:2]
+
+        padding = int((h - w) / 2)
+        res = cv2.copyMakeBorder(resized, 0, 0, padding, padding, cv2.BORDER_CONSTANT)
+    else:
+        r = size / float(w)
+        dim = (size, int(h * r))
+        resized = cv2.resize(image, dim, interpolation=inter)
+
+        (h, w) = resized.shape[:2]
+
+        padding = int((w - h) / 2)
+        res = cv2.copyMakeBorder(resized, padding, padding, 0, 0, cv2.BORDER_CONSTANT)
+
+    res = cv2.resize(res, (size, size), interpolation=inter)
+
+    return res
