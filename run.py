@@ -25,7 +25,7 @@ def process_images(input_data_dir, output_data_dir, n_files):
     create_dir_if_not_exists(output_data_dir)
 
     for file_number in range(0, n_files):
-        input_file_path = f'{input_data_dir}/img_{file_number+1}.jpg'
+        input_file_path = f'{input_data_dir}/{file_number}.png'
         output_indexes_file_path = f'{output_data_dir}/{file_number}-indeksy.txt'
         output_words_file_path = f'{output_data_dir}/{file_number}-wyrazy.png'
 
