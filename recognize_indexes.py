@@ -44,16 +44,29 @@ def remove_noise(img):
     return result
 
 
-def slice_image_lines(img, minimum=20, padding=10):
-    th, threshed = cv2.threshold(img, 127, 255, cv2.THRESH_OTSU)
+def slice_image_lines(img, minimum=20, padding=10, block_size=10):
+    _ret, threshed = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
-    ## (5) find and draw the upper and lower boundary of each lines
     hist = np.mean(threshed, axis=1)
 
+    histogram = []
+
+    block = []
+
+    for index, number in enumerate(hist):
+        block.append(number)
+
+        if index % block_size == block_size - 1:
+            mean_of_block = np.mean(block)
+
+            for i in block:
+                histogram.append(mean_of_block)
+            block = []
+
     th = 4
-    height, _width = img.shape[:2]
-    lowers = [y for y in range(height - 1) if hist[y] <= th and hist[y + 1] > th]
-    uppers = [y for y in range(height - 1) if hist[y] > th and hist[y + 1] <= th]
+    height, width = img.shape[:2]
+    lowers = [y for y in range(height - block_size) if histogram[y] <= th and histogram[y + 1] > th]
+    uppers = [y for y in range(height - block_size) if histogram[y] > th and histogram[y + 1] <= th]
 
     if len(uppers) and len(lowers):
         if uppers[0] < lowers[0]:
@@ -114,16 +127,30 @@ def slice_words(img, minimum=5, padding=10, block_size=30):
     return words
 
 
-def slice_digits(img, minimum=5, padding=10):
+def slice_digits(img, minimum=5, padding=10, block_size=5):
     blur = cv2.GaussianBlur(img, (5, 5), 0)
     _ret, threshed = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
     hist = np.mean(threshed, axis=0)
 
+    histogram = []
+
+    block = []
+
+    for index, number in enumerate(hist):
+        block.append(number)
+
+        if index % block_size == block_size - 1:
+            mean_of_block = np.mean(block)
+
+            for i in block:
+                histogram.append(mean_of_block)
+            block = []
+
     th = 0
     _height, width = img.shape[:2]
-    lowers = [x for x in range(width - 1) if hist[x] <= th and hist[x + 1] > th]
-    uppers = [x for x in range(width - 1) if hist[x] > th and hist[x + 1] <= th]
+    lowers = [x for x in range(width - block_size) if histogram[x] <= th and histogram[x + 1] > th]
+    uppers = [x for x in range(width - block_size) if histogram[x] > th and histogram[x + 1] <= th]
 
     digits = []
 
@@ -163,7 +190,7 @@ def call(image):
             digits_size += len(digits)
             word_digits.extend(reversed(digits))
             # min 3 "digits"
-            if digits_size >3:
+            if digits_size > 3:
                 break
         word_digits = reversed(word_digits)
 

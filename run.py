@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import os
-import re
 import shutil
 import sys
 
@@ -9,12 +8,6 @@ import cv2
 
 import mark_text
 import recognize_indexes
-
-
-def sorted_files(path):
-    x = os.listdir(path)
-    x.sort(key=lambda f: int(re.sub('\D', '', f)))
-    return x
 
 
 def create_dir_if_not_exists(directory):
@@ -27,32 +20,21 @@ def remove_dir_if_exists(directory):
         shutil.rmtree(directory)
 
 
-def extract_file_number(file_name):
-    res = int(re.sub('\D', '', file_name))
-    return res
-
-
 def process_images(input_data_dir, output_data_dir, n_files):
     remove_dir_if_exists(output_data_dir)
     create_dir_if_not_exists(output_data_dir)
 
-    for number, file_name in enumerate(sorted_files(input_data_dir)):
-        if number >= n_files:
-            break
-        # if number != 23:
-        #     continue
-        file_number = extract_file_number(file_name)
-
-        input_file_path = '{}/{}'.format(input_data_dir, file_name)
-        output_indexes_file_path = '{}/{}-indeksy.txt'.format(output_data_dir, file_number)
-        output_words_file_path = '{}/{}-wyrazy.png'.format(output_data_dir, file_number)
+    for file_number in range(0, n_files):
+        input_file_path = f'{input_data_dir}/img_{file_number+1}.jpg'
+        output_indexes_file_path = f'{output_data_dir}/{file_number}-indeksy.txt'
+        output_words_file_path = f'{output_data_dir}/{file_number}-wyrazy.png'
 
         image = cv2.imread(input_file_path)
 
-        print("{}. Mark text".format(number))
+        print(f"{file_number}. Mark text")
         marked_text = mark_text.call(image)
         cv2.imwrite(output_words_file_path, marked_text)
-        print("{}. Recognize index".format(number))
+        print(f"{file_number}. Recognize index")
         recognized_indexes = recognize_indexes.call(image)
         with open(output_indexes_file_path, 'w') as f:
             f.write('\n'.join(recognized_indexes))
